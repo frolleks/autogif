@@ -22,7 +22,14 @@ export async function moodOf(text: string): Promise<string> {
     decisionsRequest: {
       model: "~typesafe/jev-latest",
       state: { message: text },
-      questions: { mood: { type: "choice", instructions: "Which mood is the author of this chat message expressing?", criteria: MOODS } },
+      questions: {
+        mood: {
+          type: "choice",
+          instructions:
+            "Which mood is the author of this chat message expressing?",
+          criteria: MOODS,
+        },
+      },
     },
   });
   const a = res.answers.mood;
@@ -32,22 +39,38 @@ export async function moodOf(text: string): Promise<string> {
 export async function queryFor(text: string, mood: string): Promise<string> {
   const res = await openRouter.chat.send({
     chatRequest: {
-      model: "mistralai/ministral-8b-2512",
+      model: "qwen/qwen3.8-27b:free",
       maxCompletionTokens: 20,
       messages: [
-        { role: "system", content: "You pick reaction GIFs. Reply with ONLY a 2-5 word GIF search query that fits the message and its mood. No quotes, no explanation." },
+        {
+          role: "system",
+          content:
+            "You pick reaction GIFs. Reply with ONLY a 2-5 word GIF search query that fits the message and its mood. No quotes, no explanation.",
+        },
         { role: "user", content: `Mood: ${mood}\nMessage: ${text}` },
       ],
     },
   });
   const c = "choices" in res ? res.choices[0]?.message.content : undefined;
-  const out = typeof c === "string" ? c : (c ?? []).map((p) => ("text" in p ? p.text : "")).join("");
-  return out.trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 100);
+  const out =
+    typeof c === "string"
+      ? c
+      : (c ?? []).map((p) => ("text" in p ? p.text : "")).join("");
+  return out
+    .trim()
+    .replace(/^["'`]+|["'`]+$/g, "")
+    .slice(0, 100);
 }
 
 export async function searchGif(q: string): Promise<string | undefined> {
-  const params = new URLSearchParams({ q, per_page: "8", content_filter: "medium" });
-  const res = await fetch(`https://api.klipy.com/api/v1/${process.env.KLIPY_API_KEY}/gifs/search?${params}`);
+  const params = new URLSearchParams({
+    q,
+    per_page: "8",
+    content_filter: "medium",
+  });
+  const res = await fetch(
+    `https://api.klipy.com/api/v1/${process.env.KLIPY_API_KEY}/gifs/search?${params}`,
+  );
   if (!res.ok) throw new Error(`KLIPY ${res.status}: ${await res.text()}`);
   const body: any = await res.json();
   return body.data?.data?.[0]?.file?.md?.gif?.url;
@@ -55,15 +78,25 @@ export async function searchGif(q: string): Promise<string | undefined> {
 
 if (import.meta.main) {
   const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
+    ],
   });
-  client.once(Events.ClientReady, (c) => console.log(`Logged in as ${c.user.tag}`));
+  client.once(Events.ClientReady, (c) =>
+    console.log(`Logged in as ${c.user.tag}`),
+  );
   client.on(Events.MessageCreate, async (msg) => {
     if (msg.author.bot || !msg.content || Math.random() >= 0.1) return; // 10% of messages get a GIF
     try {
       const q = await queryFor(msg.content, await moodOf(msg.content));
       const url = q && (await searchGif(q));
-      if (url) await msg.reply({ content: url, allowedMentions: { repliedUser: false } });
+      if (url)
+        await msg.reply({
+          content: url,
+          allowedMentions: { repliedUser: false },
+        });
     } catch (err) {
       console.error(err);
     }
