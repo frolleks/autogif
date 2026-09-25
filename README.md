@@ -1,6 +1,6 @@
 # autogif
 
-Discord bot that replies to every message with a reaction GIF: TypeSafe Jev reads the mood, an LLM writes a search query, and KLIPY finds the GIF.
+Discord bot that replies to about 10% of messages with a reaction GIF: TypeSafe Jev reads the mood, an LLM writes a search query, and KLIPY finds the GIF.
 
 ## Setup
 

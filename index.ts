@@ -59,7 +59,7 @@ if (import.meta.main) {
   });
   client.once(Events.ClientReady, (c) => console.log(`Logged in as ${c.user.tag}`));
   client.on(Events.MessageCreate, async (msg) => {
-    if (msg.author.bot || !msg.content) return;
+    if (msg.author.bot || !msg.content || Math.random() >= 0.1) return; // 10% of messages get a GIF
     try {
       const q = await queryFor(msg.content, await moodOf(msg.content));
       const url = q && (await searchGif(q));
